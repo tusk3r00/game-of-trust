@@ -15,9 +15,9 @@ from utils import gepeto_to_player, gemini_to_player, load_players, run_tourname
 st.set_page_config(page_title="Game of Trust", layout="centered")
 st.title("🕹️ Game of Trust")
 
-TURNEU = False
+TURNEU = True
 
-tab_reguli, tab_submit, tab_tour = st.tabs(["Prisoner's Dilema", "Propune strategie", "Rulează turneu"])
+tab_reguli, tab_submit, tab_tour = st.tabs(["Prisoner's Dilema", "Propune strategie", "Turneu"])
 
 
 # ------------------------------------------------------------------ #
@@ -33,9 +33,9 @@ with tab_reguli:
     În funcție de alegeri, se acordă puncte:""")
     
     st.code("""
-Jucător A / Jucător B             C        T
-    C                          3 / 3	0 / 5
-    T                          5 / 0	1 / 1""")
+Jucător A / Jucător B       C       T
+    C                     3 / 3	  0 / 5
+    T                     5 / 0	  1 / 1""")
 
     st.markdown("""
     Explicație puncte:
@@ -49,8 +49,8 @@ Jucător A / Jucător B             C        T
 with tab_submit:
     st.header("Propune o strategie nouă")
 
-    team = st.text_input("Numele echipei")
-    strat_name = st.text_input("Numele strategiei (identificator Python)")
+    team = st.text_input("Numele echipei (fără diacritice)")
+    strat_name = st.text_input("Numele strategiei (fără spații, fără diacritice)")
     desc = st.text_area(
         "Descrierea strategiei (max ~250 cuvinte)",
         height=200,
@@ -94,12 +94,14 @@ with tab_tour:
                 else:
                     results = run_tournament(players, turns=int(turns), repetitions=int(reps))
 
+                    print(results.summarise())
+
                     meta = get_team_mapping()
 
                     df = pd.DataFrame(
                     data = {
-                        "Clasament": [row.Rank+1 for row in results.summarise()],
-                        "Echipa": [meta.get(row.Name.strip().lower()) for row in results.summarise()],
+                        "Rank": [row.Rank+1 for row in results.summarise()],
+                        "Echipa": [meta.get(row.Name.strip().lower().replace(" ", "")) for row in results.summarise()],
                         "Strategie": [row.Name for row in results.summarise()],
                         "Scor mediu": [round(row.Median_score,2) for row in results.summarise()],
                         "Wins": [row.Wins for row in results.summarise()],
