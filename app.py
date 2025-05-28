@@ -32,16 +32,13 @@ with tab_reguli:
     Fiecare rundă, ambii jucători aleg: Cooperare (C) sau Trădare (T).
     În funcție de alegeri, se acordă puncte:""")
     
-    st.code("""
-Jucător A / Jucător B       C       T
-    C                     3 / 3	  0 / 5
-    T                     5 / 0	  1 / 1""")
+    st.image("imagini/infografic.png")
 
     st.markdown("""
     Explicație puncte:
-    Amândoi cooperează → fiecare primește 3 puncte.
-    Unul trădează, celălalt cooperează → trădătorul ia 5 puncte, celălalt 0.
-    Amândoi trădează → fiecare ia 1 punct.
+    Amândoi cooperează → fiecare primește 2 puncte.
+    Unul trădează, celălalt cooperează → trădătorul ia 3 puncte, celălalt -1.
+    Amândoi trădează → fiecare ia 0 puncte.
     Jocul se repetă de mai multe ori, iar scorurile se adună. Scopul este să obții cât mai multe puncte
                 """)
 
@@ -79,20 +76,47 @@ with tab_tour:
         turns = st.number_input("Runde per joc", 50, 1000, value=200, step=50)
         reps = st.number_input("Repetiții per pereche", 1, 20, value=5, step=1)
         include_classics = st.checkbox(
-            "Include strategii clasice (TitForTat, Defector, Cooperator)", value=True
+            "Include strategii clasice (TitForTat, Defector, Cooperator)", value=True, key=11
+        )
+        include_extras = st.checkbox(
+            "Include strategiile (TitForTwoTats, Grudger, Random)", value=True, key=22
         )
 
         if st.button("▶️ Rulează turneu"):
             extra = []
             if include_classics:
                 extra = [axl.TitForTat(), axl.Defector(), axl.Cooperator()]
+            if include_extras:
+                extra.extend([axl.TitFor2Tats(), axl.Grudger(), axl.Random()])
 
             try:
                 players = load_players(extra_players=extra)
+                
                 if len(players) < 2:
                     st.warning("Ai nevoie de cel puțin două strategii pentru a porni turneul.")
                 else:
-                    results = run_tournament(players, turns=int(turns), repetitions=int(reps))
+
+                    # 1. Define your custom payoff values for R, S, T, P
+                    R_custom = 2  # Reward for mutual cooperation
+                    S_custom = -1 # Sucker's payoff (your score if you C, opponent D)
+                    T_custom = 3  # Temptation payoff (your score if you D, opponent C)
+                    P_custom = 0  # Punishment for mutual defection
+
+                    # 2. Create your custom Game instance
+                    custom_game = axl.Game(r=R_custom, s=S_custom, t=T_custom, p=P_custom)
+
+                    # 3. SET YOUR CUSTOM GAME AS THE GLOBAL DEFAULT
+                    #    This is the crucial step for run_tournament to use your game.
+
+                    tournament = axl.Tournament(
+                        players,
+                        turns=int(turns),
+                        repetitions=int(reps),
+                        game=custom_game # <--- This is where your custom game is applied
+                    )
+                    results = tournament.play() # Call the play method on the instance
+
+                    # results = run_tournament(players, turns=int(turns), repetitions=int(reps))
 
                     print(results.summarise())
 
