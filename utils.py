@@ -143,7 +143,7 @@ def gepeto_to_player(name: str, description: str, team: str) -> pathlib.Path:
 def gemini_to_player(name: str, description: str, team: str) -> pathlib.Path:
     """Generează fișierul utils/strategies/<name>.py ce conține clasa cerută."""
     if not name.isidentifier():
-        raise ValueError("«Numele strategiei» trebuie să fie un identificator Python valid.")
+        raise ValueError("«Numele strategiei» trebuie să fie un identificator Python valid. Scrie fără spații")
     prompt = (
         f"Scrie o clasă Python numită {name} care extinde axelrod.Player și "
         f"implementează strategia:\n\"\"\"\n{description}\n\"\"\""
