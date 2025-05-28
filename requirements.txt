@@ -1,4 +1,5 @@
 streamlit
 axelrod
 openai
+google-generativeai
 pandas
