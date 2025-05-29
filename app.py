@@ -222,4 +222,5 @@ with tab_qr:
     img.save(buf, format="PNG")
     st.image(buf.getvalue(), caption="Scanează pentru a deschide această pagină")
 
-########################
+#########################
+#########################

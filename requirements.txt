@@ -3,3 +3,4 @@ axelrod
 openai
 google-generativeai
 pandas
+qrcode
