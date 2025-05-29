@@ -143,10 +143,10 @@ with tab_tour:
                         data = {
                              "Echipa": [meta.get(row.Name.strip().lower().replace(" ", "")) for row in results.summarise()],
                              "Strategie": [row.Name for row in results.summarise()],
-                             "Punctaj Total Strategie": [round(score, 2) for score in total_strategy_payoffs], # Scorul total final calculat
+                             "Puncte": [round(score, 2) for score in total_strategy_payoffs], # Scorul total final calculat
                         }
                     )
-                    df_primul = df_primul.sort_values(by="Punctaj Total Strategie", ascending=False).reset_index(drop=True)
+                    df_primul = df_primul.sort_values(by="Puncte", ascending=False).reset_index(drop=True)
 
 
                     df = pd.DataFrame(
@@ -155,7 +155,7 @@ with tab_tour:
                              "Echipa": [meta.get(row.Name.strip().lower().replace(" ", "")) for row in results.summarise()],
                              "Strategie": [row.Name for row in results.summarise()],
                              "Scor median": [round(row.Median_score,2) for row in results.summarise()],
-                             "Punctaj Total Strategie": [round(score, 2) for score in total_strategy_payoffs], # Scorul total final calculat
+                             "Puncte": [round(score, 2) for score in total_strategy_payoffs], # Scorul total final calculat
                              #"Wins": [row.Wins for row in results.summarise()],
                              "CC": [f"{row.CC_rate:.0%}" for row in results.summarise()],
                              "CT": [f"{row.CD_rate:.0%}" for row in results.summarise()],
@@ -166,7 +166,7 @@ with tab_tour:
 
                     df_mine = pd.DataFrame(
                     data = {
-                        "Scor mediu": [round(row.Median_score,2) for row in results.summarise()],
+                        "Scor median": [round(row.Median_score,2) for row in results.summarise()],
                         "Strategie": [row for row in results.ranked_names],
                     }    
                     )
@@ -177,12 +177,12 @@ with tab_tour:
                         data = {
                             "Rank": results.ranking,
                             "Strategie": results.ranked_names, # Numele strategiilor, deja ordonate
-                            "Cooperating Rating": [round(rating, 2) for rating in results.cooperating_rating],
-                            "Scores per Repetition": scores_per_repetition_values, # Lista de scoruri per repetiție
-                            "Punctaj Total Strategie": [round(score, 2) for score in total_strategy_payoffs], # Scorul total final calculat
+                            "Cooperare": [round(rating, 2) for rating in results.cooperating_rating],
+                            "Scoruri": scores_per_repetition_values, # Lista de scoruri per repetiție
+                            "Puncte": [round(score, 2) for score in total_strategy_payoffs], # Scorul total final calculat
                         }
                     )
-                    df_new_metrics = df_new_metrics.sort_values(by="Punctaj Total Strategie", ascending=False).reset_index(drop=True)
+                    df_new_metrics = df_new_metrics.sort_values(by="Puncte", ascending=False).reset_index(drop=True)
                     # --- SFÂRȘIT DATAFRAME NOU ---
 
                     st.subheader("Clasament Punctaj Total")
