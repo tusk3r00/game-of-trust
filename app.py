@@ -9,15 +9,19 @@ import axelrod as axl
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
+import qrcode
+from io import BytesIO
+
 
 from utils import gepeto_to_player, gemini_to_player, load_players, run_tournament, get_team_mapping
 
-st.set_page_config(page_title="Game of Trust", layout="centered")
+st.set_page_config(page_title="Game of Trust", layout="centered", page_icon="https://humble-engine-7gwpgwp5v5vhggq-8501.app.github.dev/media/de5bb80500f3acd41f01c75c0a0168e8ca73791d83f6546a34207449.png",)
 st.title("🕹️ Game of Trust")
+
 
 TURNEU = True
 
-tab_reguli, tab_submit, tab_tour = st.tabs(["Prisoner's Dilema", "Propune strategie", "Turneu"])
+tab_reguli, tab_submit, tab_tour, tab_qr = st.tabs(["Prisoner's Dilema", "Propune strategie", "Turneu", "QR Code"])
 
 
 # ------------------------------------------------------------------ #
@@ -112,29 +116,52 @@ with tab_tour:
                         players,
                         turns=int(turns),
                         repetitions=int(reps),
+                        noise=0,
                         game=custom_game # <--- This is where your custom game is applied
                     )
                     results = tournament.play() # Call the play method on the instance
+                    # st.write(f"Atribute disponibile pe obiectul results: {dir(results)}")
 
                     # results = run_tournament(players, turns=int(turns), repetitions=int(reps))
 
-                    print(results.summarise())
+                    summary_rows = results.summarise()
+
+                    # Obține valorile pentru noile coloane
+                    cooperating_rating_values = results.cooperating_rating
+                    scores_per_repetition_values = results.scores 
+
+                    # Calculează "Punctajul Total Strategie" prin însumarea listelor din results.scores
+                    # Fiecare sublistă din results.scores corespunde scorurilor unei strategii per repetiție.
+                    # Sumăm aceste subliste pentru a obține scorul total final pentru fiecare strategie.
+                    total_strategy_payoffs = [sum(player_scores) for player_scores in scores_per_repetition_values]
+
+                    # st.write(f"Axelrod library version: {axl.__version__}")
 
                     meta = get_team_mapping()
 
-                    df = pd.DataFrame(
-                    data = {
-                        "Rank": [row.Rank+1 for row in results.summarise()],
-                        "Echipa": [meta.get(row.Name.strip().lower().replace(" ", "")) for row in results.summarise()],
-                        "Strategie": [row.Name for row in results.summarise()],
-                        "Scor mediu": [round(row.Median_score,2) for row in results.summarise()],
-                        "Wins": [row.Wins for row in results.summarise()],
-                        "CC": [f"{row.CC_rate:.0%}" for row in results.summarise()],
-                        "CT": [f"{row.CD_rate:.0%}" for row in results.summarise()],
-                        "TC": [f"{row.DC_rate:.0%}" for row in results.summarise()],
-                        "TT": [f"{row.DD_rate:.0%}" for row in results.summarise()],
-                    }
+                    df_primul = pd.DataFrame(
+                        data = {
+                             "Echipa": [meta.get(row.Name.strip().lower().replace(" ", "")) for row in results.summarise()],
+                             "Strategie": [row.Name for row in results.summarise()],
+                             "Punctaj Total Strategie": [round(score, 2) for score in total_strategy_payoffs], # Scorul total final calculat
+                        }
+                    )
+                    df_primul = df_primul.sort_values(by="Punctaj Total Strategie", ascending=False).reset_index(drop=True)
 
+
+                    df = pd.DataFrame(
+                         data = {
+                             "Rank": [row.Rank+1 for row in results.summarise()],
+                             "Echipa": [meta.get(row.Name.strip().lower().replace(" ", "")) for row in results.summarise()],
+                             "Strategie": [row.Name for row in results.summarise()],
+                             "Scor median": [round(row.Median_score,2) for row in results.summarise()],
+                             "Punctaj Total Strategie": [round(score, 2) for score in total_strategy_payoffs], # Scorul total final calculat
+                             #"Wins": [row.Wins for row in results.summarise()],
+                             "CC": [f"{row.CC_rate:.0%}" for row in results.summarise()],
+                             "CT": [f"{row.CD_rate:.0%}" for row in results.summarise()],
+                             "TC": [f"{row.DC_rate:.0%}" for row in results.summarise()],
+                             "TT": [f"{row.DD_rate:.0%}" for row in results.summarise()],
+                         }
                     )
 
                     df_mine = pd.DataFrame(
@@ -143,9 +170,30 @@ with tab_tour:
                         "Strategie": [row for row in results.ranked_names],
                     }    
                     )
-                    st.subheader("Clasament")
+
+
+                    # --- AICI ESTE DATAFRAME-UL NOU CERUT ---
+                    df_new_metrics = pd.DataFrame(
+                        data = {
+                            "Rank": results.ranking,
+                            "Strategie": results.ranked_names, # Numele strategiilor, deja ordonate
+                            "Cooperating Rating": [round(rating, 2) for rating in results.cooperating_rating],
+                            "Scores per Repetition": scores_per_repetition_values, # Lista de scoruri per repetiție
+                            "Punctaj Total Strategie": [round(score, 2) for score in total_strategy_payoffs], # Scorul total final calculat
+                        }
+                    )
+                    df_new_metrics = df_new_metrics.sort_values(by="Punctaj Total Strategie", ascending=False).reset_index(drop=True)
+                    # --- SFÂRȘIT DATAFRAME NOU ---
+
+                    st.subheader("Clasament Punctaj Total")
+                    st.dataframe(df_primul, use_container_width=True, hide_index=True)
+
+                    st.subheader("Clasament Scor Median")
                     st.dataframe(df, use_container_width=True, hide_index=True)
                     st.bar_chart(df_mine.set_index("Strategie"))
+
+                    st.subheader("Rating Cooperare")
+                    st.dataframe(df_new_metrics, use_container_width=True, hide_index=True)
 
 
 
@@ -154,3 +202,24 @@ with tab_tour:
                 st.exception(exc)
     else:
         st.markdown("Un pic de răbdare până când toate echipele au o strategie...")
+
+# ------------------------------------------------------------------ #
+with tab_qr:
+    st.header("Scanează QR-ul")
+    # (Streamlit ≥ 1.45) URL-ul complet al paginii curente:
+    current_url = st.context.url              # noul API st.context.url 
+
+    st.markdown(f"**Link curent:** `{current_url}`")
+
+    # Generăm codul QR în memorie
+    qr = qrcode.QRCode(box_size=15, border=2)
+    qr.add_data(current_url)
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    st.image(buf.getvalue(), caption="Scanează pentru a deschide această pagină")
+
+########################
