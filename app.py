@@ -11,6 +11,8 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import qrcode
 from io import BytesIO
+import shutil
+from pathlib import Path
 
 
 from utils import gepeto_to_player, gemini_to_player, load_players, run_tournament, get_team_mapping
@@ -21,7 +23,10 @@ st.title("🕹️ Game of Trust")
 
 TURNEU = True
 
-tab_reguli, tab_submit, tab_tour, tab_qr = st.tabs(["Prisoner's Dilema", "Propune strategie", "Turneu", "QR Code"])
+# ---------- Tabs ------------------------------------------------------------
+tab_reguli, tab_submit, tab_tour, tab_qr, tab_admin = st.tabs(
+    ["Prisoner's Dilema", "Propune strategie", "Turneu", "QR Code", "🗑️ Strategii"]
+)
 
 
 # ------------------------------------------------------------------ #
@@ -224,3 +229,27 @@ with tab_qr:
 
 #########################
 #########################
+
+# =============== TAB ADMIN/DELETE ===========================================
+with tab_admin:
+    st.header("🗑️ Șterge strategiile salvate")
+
+    strategy_dir = Path(__file__).parent / "strategies"
+    files = sorted(p.name for p in strategy_dir.glob("*.py"))
+
+    if not files:
+        st.info("Nu există fișiere .py în `strategies/`.")
+    else:
+        st.markdown("**Fișiere existente:**")
+        st.code("\n".join(files), language="text")
+
+        if st.button("Șterge TOT conținutul folder-ului strategies", type="secondary"):
+            try:
+                # Șterge toate fișierele .py și meta.json, dar păstrează folderul
+                for p in strategy_dir.glob("*.py"):
+                    p.unlink(missing_ok=True)
+                (strategy_dir / "meta.json").unlink(missing_ok=True)
+                st.success("✔️ Folder golit. Reîncarcă pagina pentru a vedea starea actualizată.")
+            except Exception as exc:
+                st.exception(exc)
+
